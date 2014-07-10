@@ -10,7 +10,7 @@ namespace Deployer.Utils
 {
     public static class ConfigHelper
     {
-        public static ISettings TryLoadCustomPathOrDefault( ISettingsLoader loader, IList<string> extraParameters, IActivityLogger logger )
+        public static ISettings TryLoadCustomPathOrDefault( ISettingsLoader loader, IList<string> extraParameters, IActivityMonitor logger )
         {
             string path = null;
             if( extraParameters.Count == 1 && !extraParameters[0].StartsWith( "--" ) ) path = extraParameters[0];
@@ -20,7 +20,7 @@ namespace Deployer.Utils
             }
             catch( Exception ex )
             {
-                logger.Error( ex, "Unable to load configuration" );
+                logger.Error().Send( ex, "Unable to load configuration" );
             }
 
             return null;

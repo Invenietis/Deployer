@@ -18,8 +18,8 @@ namespace Deployer
         {
             Console.BufferWidth = 1024;
 
-            DefaultActivityLogger logger = new DefaultActivityLogger();
-            logger.Tap.Register( new ColoredActivityLoggerConsoleSink() );
+            ActivityMonitor logger = new ActivityMonitor();
+            logger.Output.RegisterClient( new ActivityMonitorConsoleClient() );
 
             Runner runner = new Runner( logger );
             DiscoverAndRegisterActions( runner, logger );
@@ -27,7 +27,7 @@ namespace Deployer
             runner.Run( args );
         }
 
-        static void DiscoverAndRegisterActions( Runner runner, IActivityLogger logger )
+        static void DiscoverAndRegisterActions( Runner runner, IActivityMonitor logger )
         {
             Assembly assemblyToProcess = typeof( SettingsConfigurator ).Assembly;
 
@@ -36,7 +36,7 @@ namespace Deployer
                 if( typeof( IAction ).IsAssignableFrom( type ) )
                 {
                     if( type.Namespace != "Deployer.Actions" )
-                        logger.Warn( "The action {0} should be defined in \"Deployer.Actions\" namespace instead of {1}", type.Name, type.Namespace );
+                        logger.Warn().Send( "The action {0} should be defined in \"Deployer.Actions\" namespace instead of {1}", type.Name, type.Namespace );
 
                     runner.RegisterAction( (IAction)Activator.CreateInstance( type ) );
                 }

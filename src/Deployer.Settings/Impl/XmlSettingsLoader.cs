@@ -13,16 +13,16 @@ namespace Deployer.Settings.Impl
     {
         public const string DefaultConfigurationFileName = "Deployer.config";
 
-        public ISettings Load( string filePath, IActivityLogger logger )
+        public ISettings Load( string filePath, IActivityMonitor logger )
         {
-            using( logger.OpenGroup( LogLevel.Info, "Loading configuration" ) )
+            using( logger.OpenInfo().Send( "Loading configuration" ) )
             {
                 if( string.IsNullOrEmpty( filePath ) && File.Exists( DefaultConfigurationFileName ) )
                     filePath = DefaultConfigurationFileName;
 
                 if( !string.IsNullOrEmpty( filePath ) )
                 {
-                    logger.Info( "Configuration file found at {0}", Path.GetFullPath( filePath ) );
+                    logger.Info().Send( "Configuration file found at {0}", Path.GetFullPath( filePath ) );
                     return LoadFromFile( filePath );
                 }
                 return new XmlSettings();

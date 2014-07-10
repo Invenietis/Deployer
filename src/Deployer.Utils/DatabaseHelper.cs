@@ -10,7 +10,7 @@ namespace Deployer.Utils
 {
     public static class DatabaseHelper
     {
-        public static bool TryToConnectToDB( string connectionString, IActivityLogger logger )
+        public static bool TryToConnectToDB( string connectionString, IActivityMonitor logger )
         {
             try
             {
@@ -18,14 +18,14 @@ namespace Deployer.Utils
                 {
 
                     conn.Open();
-                    logger.Info( "Test connection succeeded. The database {0} is reachable", conn.Database );
+                    logger.Info().Send( "Test connection succeeded. The database {0} is reachable", conn.Database );
 
                     return true;
                 }
             }
             catch( Exception ex )
             {
-                logger.Error( ex, "Unable to connect to any server with the given connection string." );
+                logger.Error().Send( ex, "Unable to connect to any server with the given connection string." );
                 return false;
             }
         }

@@ -29,16 +29,16 @@ namespace Deployer.Action
             get { return "Show the program usage. All commands available, and their descriptions"; }
         }
 
-        public void CheckSettingsValidity( ISettings settings, IList<string> extraParameters, IActivityLogger logger )
+        public void CheckSettingsValidity( ISettings settings, IList<string> extraParameters, IActivityMonitor logger )
         {
         }
 
-        public ISettings LoadSettings( ISettingsLoader loader, IList<string> extraParameters, IActivityLogger logger )
+        public ISettings LoadSettings( ISettingsLoader loader, IList<string> extraParameters, IActivityMonitor logger )
         {
             return null;
         }
 
-        public void Run( Runner runner, ISettings settings, IList<string> extraParameters, IActivityLogger logger )
+        public void Run( Runner runner, ISettings settings, IList<string> extraParameters, IActivityMonitor logger )
         {
             string version = typeof( ShowHelpAction ).Assembly.GetName().Version.ToString( 4 );
 

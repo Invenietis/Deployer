@@ -31,19 +31,19 @@ namespace Deployer.Actions
             };
         }
 
-        public ISettings LoadSettings( ISettingsLoader loader, IList<string> extraParameters, IActivityLogger logger )
+        public ISettings LoadSettings( ISettingsLoader loader, IList<string> extraParameters, IActivityMonitor logger )
         {
             return ConfigHelper.TryLoadCustomPathOrDefault( loader, extraParameters, logger );
         }
 
-        public void CheckSettingsValidity( ISettings settings, IList<string> extraParameters, IActivityLogger logger )
+        public void CheckSettingsValidity( ISettings settings, IList<string> extraParameters, IActivityMonitor logger )
         {
             // Check connection string
             if( !string.IsNullOrEmpty( settings.ConnectionString ) )
             {
                 DatabaseHelper.TryToConnectToDB( settings.ConnectionString, logger );
             }
-            else logger.Error( "No connection string configured" );
+            else logger.Error().Send( "No connection string configured" );
 
             // Check backup directory
             if( !string.IsNullOrEmpty( settings.BackupDirectory ) )
@@ -52,11 +52,11 @@ namespace Deployer.Actions
                 {
                     if( !Directory.EnumerateFiles( Path.GetFullPath( settings.BackupDirectory ), "*.bak" ).Any()
                         && !Directory.EnumerateFiles( Path.GetFullPath( Path.Combine( settings.BackupDirectory, "WithSpecificNames" ) ) ).Any() )
-                        logger.Error( "The backup directory is empty" );
+                        logger.Error().Send( "The backup directory is empty" );
                 }
-                else logger.Error( "The backup directory does not exist" );
+                else logger.Error().Send( "The backup directory does not exist" );
             }
-            else logger.Error( "No backup directory configured" );
+            else logger.Error().Send( "No backup directory configured" );
 
             string parsedBaseName = null;
             var options = new OptionSet() { { "from=", v => parsedBaseName = v } };
@@ -67,8 +67,8 @@ namespace Deployer.Actions
             }
             catch( Exception ex )
             {
-                logger.Error( "Error while parsing extra parameters" );
-                logger.Error( ex );
+                logger.Error().Send( "Error while parsing extra parameters" );
+                logger.Error().Send( ex );
             }
 
             _baseName = null;
@@ -78,11 +78,11 @@ namespace Deployer.Actions
                 _baseName = parsedBaseName;
                 _specific = new SpecificBackup( settings, _baseName );
                 if( _specific.BackupFile == null )
-                    logger.Error( "Unable to find a backup named as '{0}'", _baseName );
+                    logger.Error().Send( "Unable to find a backup named as '{0}'", _baseName );
             }
         }
 
-        public void Run( Runner runner, ISettings settings, IList<string> extraParameters, IActivityLogger logger )
+        public void Run( Runner runner, ISettings settings, IList<string> extraParameters, IActivityMonitor logger )
         {
             string formatedDate = DateTime.Now.ToFileFormatString();
 
@@ -99,30 +99,30 @@ namespace Deployer.Actions
                 }
                 else // find the last backup
                 {
-                    using( logger.OpenGroup( LogLevel.Info, "Looking for the last written backup file" ) )
+                    using( logger.OpenInfo().Send( "Looking for the last written backup file" ) )
                     {
-                        using( logger.OpenGroup( LogLevel.Info, "Available backup files" ) )
+                        using( logger.OpenInfo().Send( "Available backup files" ) )
                         {
                             foreach( var bak in backupDirectory.EnumerateFiles( "*.bak" ) )
                             {
-                                logger.Info( bak.Name );
+                                logger.Info().Send( bak.Name );
                                 if( backupFile == null || bak.LastWriteTimeUtc > backupFile.LastWriteTimeUtc )
                                     backupFile = bak;
                             }
                         }
                         if( backupFile == null )
-                            logger.Error( "Unable to find a backup file to use" );
+                            logger.Error().Send( "Unable to find a backup file to use" );
                     }
                 }
             }
 
             if( innerErrorCount == 0 )
             {
-                using( logger.OpenGroup( LogLevel.Warn, "Backup file found. Here are some details :" ) )
+                using( logger.OpenWarn().Send( "Backup file found. Here are some details :" ) )
                 {
-                    logger.Warn( "Filename : {0}", backupFile.Name );
-                    logger.Warn( "Creation date : {0}", backupFile.CreationTime );
-                    logger.Warn( "Size : {0} mo", backupFile.Length / 1024 / 1024 );
+                    logger.Warn().Send( "Filename : {0}", backupFile.Name );
+                    logger.Warn().Send( "Creation date : {0}", backupFile.CreationTime );
+                    logger.Warn().Send( "Size : {0} mo", backupFile.Length / 1024 / 1024 );
                 }
 
                 if( CommandLineHelper.PromptBool( string.Format( "Are you sure you want to restore your database with the backup file {0} ? This cannot be undone !", backupFile.Name ) ) )
@@ -136,7 +136,7 @@ namespace Deployer.Actions
                                 conn.Open();
                                 conn.InfoMessage += ( o, e ) =>
                                 {
-                                    logger.Info( e.Message );
+                                    logger.Info().Send( e.Message );
                                 };
 
                                 using( StreamReader sr = new StreamReader( Assembly.GetExecutingAssembly().GetManifestResourceStream( "Deployer.Actions.DatabaseInteractions.RestoreFormat.sql" ) ) )
@@ -145,25 +145,25 @@ namespace Deployer.Actions
                                     using( var cmd = conn.CreateCommand() )
                                     {
                                         cmd.CommandText = string.Format( sqlFile, conn.Database, Path.Combine( Path.GetFullPath( settings.BackupDirectory ), backupFile.FullName ) );
-                                        using( logger.OpenGroup( LogLevel.Info, "Starting restore of {0}", conn.Database ) )
+                                        using( logger.OpenInfo().Send( "Starting restore of {0}", conn.Database ) )
                                         {
                                             cmd.ExecuteNonQuery();
                                         }
 
-                                        logger.Info( "Restore finished" );
+                                        logger.Info().Send( "Restore finished" );
                                     }
                                 }
                             }
                             catch( Exception ex )
                             {
-                                logger.Error( ex, "Unable to restore the database." );
+                                logger.Error().Send( ex, "Unable to restore the database." );
                             }
                         }
                     }
                 }
                 else
                 {
-                    logger.Info( "Restore aborted" );
+                    logger.Info().Send( "Restore aborted" );
                 }
             }
         }

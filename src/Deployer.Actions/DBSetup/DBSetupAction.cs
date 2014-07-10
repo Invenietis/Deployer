@@ -38,22 +38,22 @@ namespace Deployer.Actions
             };
         }
 
-        public ISettings LoadSettings( ISettingsLoader loader, IList<string> extraParameters, IActivityLogger logger )
+        public ISettings LoadSettings( ISettingsLoader loader, IList<string> extraParameters, IActivityMonitor logger )
         {
             return ConfigHelper.TryLoadCustomPathOrDefault( loader, extraParameters, logger );
         }
 
-        public void CheckSettingsValidity( ISettings settings, IList<string> extraParameters, IActivityLogger logger )
+        public void CheckSettingsValidity( ISettings settings, IList<string> extraParameters, IActivityMonitor logger )
         {
             // Check rootdirectorypath
             if( !string.IsNullOrEmpty( settings.RootAbsoluteDirectory ) )
             {
                 if( !Directory.Exists( settings.RootAbsoluteDirectory ) )
                 {
-                    logger.Error( "The absolute root directory does not exists at {0}", settings.RootAbsoluteDirectory );
+                    logger.Error().Send( "The absolute root directory does not exists at {0}", settings.RootAbsoluteDirectory );
                 }
             }
-            else logger.Error( "No absolute root directory configured" );
+            else logger.Error().Send( "No absolute root directory configured" );
 
             // Check connection string
             if( !string.IsNullOrEmpty( settings.ConnectionString ) )
@@ -66,11 +66,11 @@ namespace Deployer.Actions
                     }
                     catch( Exception ex )
                     {
-                        logger.Error( ex, "Unable to connect to any server with the given connection string." );
+                        logger.Error().Send( ex, "Unable to connect to any server with the given connection string." );
                     }
                 }
             }
-            else logger.Error( "No connection string configured" );
+            else logger.Error().Send( "No connection string configured" );
 
             // Check log directory
             if( !string.IsNullOrEmpty( settings.LogDirectory ) )
@@ -78,20 +78,20 @@ namespace Deployer.Actions
                 if( !Directory.Exists( Path.GetFullPath( settings.LogDirectory ) ) )
                 {
                     Directory.CreateDirectory( Path.GetFullPath( settings.LogDirectory ) );
-                    logger.Warn( "Log directory not found. Automatically created." );
+                    logger.Warn().Send( "Log directory not found. Automatically created." );
                 }
             }
-            else logger.Error( "No log directory configured" );
+            else logger.Error().Send( "No log directory configured" );
 
             // Check dbsetup path
             if( !string.IsNullOrEmpty( settings.DBSetupConsolePath ) )
             {
                 if( !File.Exists( Path.GetFullPath( settings.DBSetupConsolePath ) ) )
                 {
-                    logger.Error( "DBSetup console not found at {0}", settings.DBSetupConsolePath );
+                    logger.Error().Send( "DBSetup console not found at {0}", settings.DBSetupConsolePath );
                 }
             }
-            else logger.Error( "No dbsetup console application configured" );
+            else logger.Error().Send( "No dbsetup console application configured" );
 
 
             // Check rootdirectorypath
@@ -101,15 +101,15 @@ namespace Deployer.Actions
                 {
                     if( !Directory.Exists( p ) )
                     {
-                        logger.Error( "The dll directory does not exists at {0}", p );
+                        logger.Error().Send( "The dll directory does not exists at {0}", p );
                     }
                 }
             }
-            else logger.Error( "No dll directory paths configured" );
+            else logger.Error().Send( "No dll directory paths configured" );
 
             // Check AssemblieNamesToProcess
             if( settings.AssemblieNamesToProcess == null || settings.AssemblieNamesToProcess.Count == 0 )
-                logger.Error( "No assemblieNames to process configured" );
+                logger.Error().Send( "No assemblieNames to process configured" );
 
             string parsedBaseName = null;
             var options = new OptionSet() { { "from=", v => parsedBaseName = v } };
@@ -120,25 +120,25 @@ namespace Deployer.Actions
             }
             catch( Exception ex )
             {
-                logger.Error( "Error while parsing extra parameters" );
-                logger.Error( ex );
+                logger.Error().Send( "Error while parsing extra parameters" );
+                logger.Error().Send( ex );
             }
 
             if( !string.IsNullOrWhiteSpace( parsedBaseName ) )
                 _baseName = parsedBaseName;
         }
 
-        public void Run( Runner runner, ISettings settings, IList<string> extraParameters, IActivityLogger logger )
+        public void Run( Runner runner, ISettings settings, IList<string> extraParameters, IActivityMonitor logger )
         {
             int innerErrorCount = 0;
             using( LogHelper.ReplicateIn( logger, settings, "DBSetups", string.Concat( "DBSetup-", DateTime.Now.ToFileFormatString(), ".log" ) ) )
-            using( logger.OpenGroup( LogLevel.Info, "DBSetup" ) )
+            using( logger.OpenInfo().Send( "DBSetup" ) )
             {
                 if( _baseName != null )
-                    logger.Warn( "You are running this dbsetup from a specific backup named '{0}'", _baseName );
+                    logger.Warn().Send( "You are running this dbsetup from a specific backup named '{0}'", _baseName );
 
                 using( logger.CatchCounter( ( errorCount ) => innerErrorCount = errorCount ) )
-                using( logger.OpenGroup( LogLevel.Info, "Backup" ) )
+                using( logger.OpenInfo().Send( "Backup" ) )
                 {
                     if( !extraParameters.Contains( "--on-azure" ) )
                     {
@@ -146,7 +146,7 @@ namespace Deployer.Actions
                     }
                     else
                     {
-                        logger.Info( "Run on azure (--on-azure). No backup !" );
+                        logger.Info().Send( "Run on azure (--on-azure). No backup !" );
                     }
                 }
 
@@ -155,7 +155,7 @@ namespace Deployer.Actions
                     if( _baseName != null )
                     {
                         using( logger.CatchCounter( ( errorCount ) => innerErrorCount = errorCount ) )
-                        using( logger.OpenGroup( LogLevel.Info, "Restoring the specific backup '{0}'", _baseName ) )
+                        using( logger.OpenInfo().Send( "Restoring the specific backup '{0}'", _baseName ) )
                         {
                             runner.RunSpecificAction<RestoreAction>( settings, extraParameters );
                         }
@@ -169,7 +169,7 @@ namespace Deployer.Actions
                     {
                         AssemblyNameDefinition ckCoreVersion = null;
                         using( logger.CatchCounter( ( errorCount ) => innerErrorCount = errorCount ) )
-                        using( logger.OpenGroup( LogLevel.Info, "Check the version of CK.Core in the dll directories" ) )
+                        using( logger.OpenInfo().Send( "Check the version of CK.Core in the dll directories" ) )
                             ckCoreVersion = FindSpecificAssembly( "CK.Core", dllPaths, logger );
 
                         if( innerErrorCount == 0 )
@@ -179,7 +179,7 @@ namespace Deployer.Actions
                                 UpdateAssemblyRebindingInDBSetupConsoleConfig( settings, ckCoreVersion, logger );
                             }
 
-                            using( logger.OpenGroup( LogLevel.Info, "DBSetup process" ) )
+                            using( logger.OpenInfo().Send( "DBSetup process" ) )
                             {
 
                                 if( innerErrorCount == 0 && CommandLineHelper.PromptBool( "Are you sure you want to run the dbsetup ?" ) )
@@ -191,7 +191,7 @@ namespace Deployer.Actions
                                         string.Join( ";", settings.AssemblieNamesToProcess ),
                                         settings.ConnectionString );
 
-                                    logger.Info( "Running this command line {0}\"{1}\" {2}", Environment.NewLine, settings.DBSetupConsolePath, commandline );
+                                    logger.Info().Send( "Running this command line {0}\"{1}\" {2}", Environment.NewLine, settings.DBSetupConsolePath, commandline );
 
                                     ProcessStartInfo processStartInfo = new ProcessStartInfo( settings.DBSetupConsolePath, commandline );
                                     processStartInfo.RedirectStandardOutput = true;
@@ -201,17 +201,19 @@ namespace Deployer.Actions
 
                                     Process process = Process.Start( processStartInfo );
 
-                                    logger.Info( process.StandardOutput.ReadToEnd() );
+                                    ReadStdOut( logger, process.StandardOutput );
+                                    //logger.Info().Send( process.StandardOutput.ReadToEnd() );
+
                                     string errors = process.StandardError.ReadToEnd();
                                     if( !string.IsNullOrWhiteSpace( errors ) )
-                                        logger.Error( errors );
+                                        logger.Error().Send( errors );
 
                                     process.WaitForExit();
                                     process.Close();
 
                                     if( !extraParameters.Contains( "--no-refresh" ) )
                                     {
-                                        using( logger.OpenGroup( LogLevel.Info, "Refresh views" ) )
+                                        using( logger.OpenInfo().Send( "Refresh views" ) )
                                         {
                                             RefreshView( settings, logger );
                                         }
@@ -220,7 +222,7 @@ namespace Deployer.Actions
                                     if( _baseName != null )
                                     {
                                         using( logger.CatchCounter( ( errorCount ) => innerErrorCount = errorCount ) )
-                                        using( logger.OpenGroup( LogLevel.Info, "Auto Revert based on backup done just before this dbsetup{0}(because you are running from a specific backup file)", Environment.NewLine ) )
+                                        using( logger.OpenInfo().Send( "Auto Revert based on backup done just before this dbsetup{0}(because you are running from a specific backup file)", Environment.NewLine ) )
                                         {
                                             runner.RunSpecificAction<RestoreAction>( settings, new string[0] );
                                         }
@@ -228,7 +230,7 @@ namespace Deployer.Actions
                                 }
                                 else
                                 {
-                                    logger.Info( "DBSetup aborted" );
+                                    logger.Info().Send( "DBSetup aborted" );
                                 }
                             }
                         }
@@ -237,32 +239,41 @@ namespace Deployer.Actions
             }
         }
 
-        AssemblyNameDefinition FindSpecificAssembly( string assemblyName, IEnumerable<string> dllPaths, IActivityLogger logger )
+        void ReadStdOut(IActivityMonitor logger, StreamReader reader)
+        {
+            string str;
+            while( (str = reader.ReadLine()) != null )
+            {
+                logger.Info().Send( str );
+            }
+        }
+
+        AssemblyNameDefinition FindSpecificAssembly( string assemblyName, IEnumerable<string> dllPaths, IActivityMonitor logger )
         {
             AssemblyNameDefinition foundAssemblyName = null;
             foreach( var dllPath in dllPaths )
             {
-                using( logger.OpenGroup( LogLevel.Info, "Looking for {0}.dll in {1}", assemblyName, dllPath ) )
+                using( logger.OpenInfo().Send( "Looking for {0}.dll in {1}", assemblyName, dllPath ) )
                 {
                     string foundPath =  Directory.EnumerateFiles( dllPath, string.Format( "{0}.dll", assemblyName ) ).FirstOrDefault();
                     if( !string.IsNullOrEmpty( foundPath ) )
                     {
-                        logger.Info( "{0} found : {1}", assemblyName, Path.GetFullPath( foundPath ) );
+                        logger.Info().Send( "{0} found : {1}", assemblyName, Path.GetFullPath( foundPath ) );
                         try
                         {
                             using( Stream dllStream = File.OpenRead( foundPath ) )
                             {
                                 AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly( dllStream );
-                                logger.Info( "{0} reflected assembly name : {1}", assemblyName, assembly.Name );
+                                logger.Info().Send( "{0} reflected assembly name : {1}", assemblyName, assembly.Name );
                                 if( foundAssemblyName == null )
                                     foundAssemblyName = assembly.Name;
                                 else if( foundAssemblyName.ToString() != assembly.Name.ToString() ) // compare based on the tostring values of assembly name
-                                    logger.Error( "The {0} set of dll is not homogene. There is different versions here !", assemblyName );
+                                    logger.Error().Send( "The {0} set of dll is not homogene. There is different versions here !", assemblyName );
                             }
                         }
                         catch( Exception ex )
                         {
-                            logger.Error( ex );
+                            logger.Error().Send( ex );
                         }
                     }
                 }
@@ -271,19 +282,19 @@ namespace Deployer.Actions
             return foundAssemblyName;
         }
 
-        void UpdateAssemblyRebindingInDBSetupConsoleConfig( ISettings settings, AssemblyNameDefinition ckCoreVersion, IActivityLogger logger )
+        void UpdateAssemblyRebindingInDBSetupConsoleConfig( ISettings settings, AssemblyNameDefinition ckCoreVersion, IActivityMonitor logger )
         {
             new DBSetup.ConfigFileManipulator( settings, logger ).ResetAssemblyRebindings( ckCoreVersion );
         }
 
-        IEnumerable<string> RelativizeDllsPaths( ISettings settings, IActivityLogger logger )
+        IEnumerable<string> RelativizeDllsPaths( ISettings settings, IActivityMonitor logger )
         {
             List<string> paths = new List<string>();
             foreach( var path in settings.DllDirectoryPaths )
             {
                 string commonAncestor = FindCommonPath( Path.GetFullPath( settings.RootAbsoluteDirectory ), Path.GetFullPath( path ) );
                 if( string.IsNullOrEmpty( commonAncestor ) )
-                    logger.Error( "The dll directory path {0} has nothing in common with the root directory {1}", Path.GetFullPath( path ), Path.GetFullPath( settings.RootAbsoluteDirectory ) );
+                    logger.Error().Send( "The dll directory path {0} has nothing in common with the root directory {1}", Path.GetFullPath( path ), Path.GetFullPath( settings.RootAbsoluteDirectory ) );
 
                 string finalPath = RemoveTrailingSlash( Path.GetFullPath( path ).Remove( 0, commonAncestor.Length + 1 ) );
 
@@ -301,7 +312,7 @@ namespace Deployer.Actions
             return path;
         }
 
-        void RefreshView( ISettings settings, IActivityLogger logger )
+        void RefreshView( ISettings settings, IActivityMonitor logger )
         {
             using( SqlConnection conn = new SqlConnection( settings.ConnectionString ) )
             {
@@ -310,7 +321,7 @@ namespace Deployer.Actions
                     conn.Open();
                     conn.InfoMessage += ( o, e ) =>
                     {
-                        logger.Info( e.Message );
+                        logger.Info().Send( e.Message );
                     };
 
                     using( StreamReader sr = new StreamReader( Assembly.GetExecutingAssembly().GetManifestResourceStream( "Deployer.Actions.DBSetup.RefreshViews.sql" ) ) )
@@ -319,18 +330,18 @@ namespace Deployer.Actions
                         using( var cmd = conn.CreateCommand() )
                         {
                             cmd.CommandText = sqlFile;
-                            using( logger.OpenGroup( LogLevel.Info, "Starting refresh views process" ) )
+                            using( logger.OpenInfo().Send( "Starting refresh views process" ) )
                             {
                                 cmd.ExecuteNonQuery();
                             }
 
-                            logger.Info( "All the database views have been refreshed" );
+                            logger.Info().Send( "All the database views have been refreshed" );
                         }
                     }
                 }
                 catch( Exception ex )
                 {
-                    logger.Error( ex, "Unable to refresh the views." );
+                    logger.Error().Send( ex, "Unable to refresh the views." );
                 }
             }
         }

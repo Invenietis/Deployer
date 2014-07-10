@@ -17,9 +17,9 @@ namespace Deployer.Actions.DBSetup
     public class ConfigFileManipulator
     {
         ISettings _settings;
-        IActivityLogger _logger;
+        IActivityMonitor _logger;
 
-        public ConfigFileManipulator( ISettings settings, IActivityLogger logger )
+        public ConfigFileManipulator( ISettings settings, IActivityMonitor logger )
         {
             _settings = settings;
             _logger = logger;
@@ -37,8 +37,8 @@ namespace Deployer.Actions.DBSetup
                 }
                 catch( Exception ex )
                 {
-                    _logger.Warn( ex, "Unable to load the configuration file {0}", configPath );
-                    _logger.Warn( "Rebuilding a config file from scratch" );
+                    _logger.Warn().Send( ex, "Unable to load the configuration file {0}", configPath );
+                    _logger.Warn().Send( "Rebuilding a config file from scratch" );
                     CreateConfigurationNode( ref xConfig );
                 }
             }

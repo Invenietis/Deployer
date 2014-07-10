@@ -24,16 +24,16 @@ namespace Deployer.Actions
             return null;
         }
 
-        public void CheckSettingsValidity( Settings.ISettings settings, IList<string> extraParameters, IActivityLogger logger )
+        public void CheckSettingsValidity( Settings.ISettings settings, IList<string> extraParameters, IActivityMonitor logger )
         {
         }
 
-        public Settings.ISettings LoadSettings( ISettingsLoader loader, IList<string> extraParameters, IActivityLogger logger )
+        public Settings.ISettings LoadSettings( ISettingsLoader loader, IList<string> extraParameters, IActivityMonitor logger )
         {
             return ConfigHelper.TryLoadCustomPathOrDefault( loader, extraParameters, logger );
         }
 
-        public void Run( Runner runner, Settings.ISettings settings, IList<string> extraParameters, IActivityLogger logger )
+        public void Run( Runner runner, Settings.ISettings settings, IList<string> extraParameters, IActivityMonitor logger )
         {
             if( !settings.IsNew )
             {
@@ -47,7 +47,7 @@ namespace Deployer.Actions
                 DatabaseHelper.TryToConnectToDB( settings.ConnectionString, logger );
             }
             else
-                logger.Warn( "No configuration file found. Please run -? to show usage and see how you can set the configuration." );
+                logger.Warn().Send( "No configuration file found. Please run -? to show usage and see how you can set the configuration." );
         }
     }
 }

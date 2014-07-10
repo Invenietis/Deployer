@@ -62,16 +62,16 @@ namespace Deployer.Actions
             return null;
         }
 
-        public void CheckSettingsValidity( ISettings settings, IList<string> extraParameters, IActivityLogger logger )
+        public void CheckSettingsValidity( ISettings settings, IList<string> extraParameters, IActivityMonitor logger )
         {
         }
 
-        public ISettings LoadSettings( ISettingsLoader loader, IList<string> extraParameters, IActivityLogger logger )
+        public ISettings LoadSettings( ISettingsLoader loader, IList<string> extraParameters, IActivityMonitor logger )
         {
             return ConfigHelper.TryLoadCustomPathOrDefault( loader, extraParameters, logger );
         }
 
-        public void Run( Runner runner, ISettings settings, IList<string> extraParameters, IActivityLogger logger )
+        public void Run( Runner runner, ISettings settings, IList<string> extraParameters, IActivityMonitor logger )
         {
             if( CommandLineHelper.PromptBool( "Let's start the configuration ?", "yes" ) )
             {
@@ -98,7 +98,7 @@ namespace Deployer.Actions
                     }
                     catch( ArgumentException ex )
                     {
-                        logger.Error( ex, "The given connection string is invalid" );
+                        logger.Error().Send( ex, "The given connection string is invalid" );
                     }
                 }
 
@@ -118,11 +118,11 @@ namespace Deployer.Actions
 
                     runner.UpdateSettings( settings, editableSettings );
 
-                    logger.Info( "Ok, the configuration has been saved" );
+                    logger.Info().Send( "Ok, the configuration has been saved" );
                 }
                 else
                 {
-                    logger.Warn( "Setup is cancelled, nothing will be saved." );
+                    logger.Warn().Send( "Setup is cancelled, nothing will be saved." );
                 }
             }
         }

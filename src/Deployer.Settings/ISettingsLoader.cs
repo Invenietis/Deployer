@@ -16,7 +16,7 @@ namespace Deployer.Settings
         /// <param name="filepath">File path to the config file</param>
         /// <param name="logger">Activity logger used to check errors and so on</param>
         /// <returns>The loaded settings or null</returns>
-        ISettings Load( string filepath, IActivityLogger logger );
+        ISettings Load( string filepath, IActivityMonitor logger );
 
         /// <summary>
         /// Save the given settings to their filepath

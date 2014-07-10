@@ -28,7 +28,7 @@ namespace Deployer.Action
         /// <param name="extraParameters">The extraParameters found in the command line</param>
         /// <param name="logger">The activity logger used to check errors and so on</param>
         /// <returns>Loaded settings</returns>
-        ISettings LoadSettings( ISettingsLoader loader, IList<string> extraParameters, IActivityLogger logger );
+        ISettings LoadSettings( ISettingsLoader loader, IList<string> extraParameters, IActivityMonitor logger );
 
         /// <summary>
         /// Second step in the action invokation process.
@@ -38,7 +38,7 @@ namespace Deployer.Action
         /// <param name="settings">The previously loaded settings</param>
         /// <param name="extraParameters">The extraParameters found in the command line</param>
         /// <param name="logger">The activity logger used to check errors and so on</param>
-        void CheckSettingsValidity( ISettings settings, IList<string> extraParameters, IActivityLogger logger );
+        void CheckSettingsValidity( ISettings settings, IList<string> extraParameters, IActivityMonitor logger );
 
         /// <summary>
         /// Third (and final) step in the action invokation process.
@@ -48,7 +48,7 @@ namespace Deployer.Action
         /// <param name="settings">The previous loaded, and valid settings</param>
         /// <param name="extraParameters">The extraParameters found in the command line</param>
         /// <param name="logger">The activity logger used to check errors and so on</param>
-        void Run( Runner runner, ISettings settings, IList<string> extraParameters, IActivityLogger logger );
+        void Run( Runner runner, ISettings settings, IList<string> extraParameters, IActivityMonitor logger );
 
         /// <summary>
         /// Retreave all the sub options to be display in help for this action with all its arguments

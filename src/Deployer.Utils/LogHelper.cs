@@ -11,27 +11,23 @@ namespace Deployer.Utils
 {
     public static class LogHelper
     {
-        public static TextWriter ReplicateIn( IActivityLogger logger, ISettings settings, string directoryName, string filename )
+        public static TextWriter ReplicateIn( IActivityMonitor logger, ISettings settings, string directoryName, string filename )
         {
-            DefaultActivityLogger dLogger = logger as DefaultActivityLogger;
-            if( dLogger != null )
+            if( !string.IsNullOrEmpty( settings.LogDirectory ) )
             {
-                if( !string.IsNullOrEmpty( settings.LogDirectory ) )
-                {
-                    string backupLogDirectory = Path.Combine( settings.LogDirectory, directoryName );
+                string backupLogDirectory = Path.Combine( settings.LogDirectory, directoryName );
 
-                    if( !Directory.Exists( backupLogDirectory ) )
-                        Directory.CreateDirectory( backupLogDirectory );
+                if( !Directory.Exists( backupLogDirectory ) )
+                    Directory.CreateDirectory( backupLogDirectory );
 
-                    string logFilePath = Path.Combine( backupLogDirectory, filename );
+                string logFilePath = Path.Combine( backupLogDirectory, filename );
 
-                    TextWriter txtWr = File.CreateText( logFilePath );
-                    dLogger.Tap.Register( new ActivityLoggerTextWriterSink( txtWr ) );
+                TextWriter txtWr = File.CreateText( logFilePath );
 
-                    return txtWr;
-                }
+                logger.Output.RegisterClient( new ActivityMonitorTextWriterClient( s => txtWr.Write( s ) ) );
+
+                return txtWr;
             }
-
             return TextWriter.Null;
         }
     }

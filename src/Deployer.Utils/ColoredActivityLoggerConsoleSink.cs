@@ -8,7 +8,7 @@ using CK.Core;
 
 namespace Deployer.Utils
 {
-    public class ColoredActivityLoggerConsoleSink : IActivityLoggerSink
+    /*public class ColoredActivityLoggerConsoleSink : IActivityLoggerSink
     {
         Func<TextWriter> _writer;
         string _prefix;
@@ -165,5 +165,5 @@ namespace Deployer.Utils
                     return ConsoleColor.White;
             }
         }
-    }
+    }*/
 }

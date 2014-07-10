@@ -14,13 +14,13 @@ namespace Deployer
 {
     public class Runner
     {
-        IActivityLogger _logger;
+        IActivityMonitor _logger;
 
         ISettingsLoader _settingsLoader;
         IDictionary<Type,ActionWrapper> _actions;
         OptionSet _optionSet;
 
-        public Runner( IActivityLogger logger )
+        public Runner( IActivityMonitor logger )
         {
             _logger = logger;
 
@@ -63,7 +63,7 @@ namespace Deployer
             }
             catch( Exception ex )
             {
-                _logger.Error( ex );
+                _logger.Error().Send( ex );
                 RunSpecificAction<ShowHelpAction>( null, null );
                 return;
             }
@@ -81,7 +81,7 @@ namespace Deployer
             }
             else
             {
-                _logger.Error( "The command is invalid. Try -help to show usage" );
+                _logger.Error().Send( "The command is invalid. Try -help to show usage" );
             }
         }
 
@@ -102,7 +102,7 @@ namespace Deployer
                 RunAction( actionToRun.UnderlyingAction, settings, extraParameters );
             }
             else
-                _logger.Error( "The action with type {0} cannot be found", typeof( T ) );
+                _logger.Error().Send( "The action with type {0} cannot be found", typeof( T ) );
         }
 
         void RunAction( IAction action, ISettings settings, IList<string> extraParameters )
